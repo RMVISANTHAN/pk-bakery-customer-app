@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "572756960503",
+    "project_id": "pk-bakery",
+    "storage_bucket": "pk-bakery.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:572756960503:android:aa5e4305d6113c91d8dff2",
+        "android_client_info": {
+          "package_name": "com.pkbakery.customer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCNB8qKxkDOaaQrNFJfYiW6yaur_g-OPtk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
