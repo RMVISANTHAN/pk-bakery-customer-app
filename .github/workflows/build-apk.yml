@@ -1,0 +1,86 @@
+name: Build Customer App APK
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Back up google-services.json if present
+        run: |
+          if [ -f android/app/google-services.json ]; then
+            cp android/app/google-services.json /tmp/google-services.json
+            echo "backed_up=true" >> $GITHUB_ENV
+          else
+            echo "backed_up=false" >> $GITHUB_ENV
+          fi
+
+      - name: Generate missing Android platform files
+        run: |
+          if [ ! -f android/settings.gradle ] && [ ! -f android/settings.gradle.kts ]; then
+            echo "Android scaffolding missing — generating it now"
+            flutter create --platforms=android --org com.pkbakery --project-name pk_bakery_customer .
+          else
+            echo "Android scaffolding already present, skipping"
+          fi
+
+      - name: Restore google-services.json
+        run: |
+          if [ "$backed_up" = "true" ]; then
+            cp /tmp/google-services.json android/app/google-services.json
+          fi
+
+      - name: Wire in Google Services Gradle plugin (Groovy build files)
+        run: |
+          BUILD_GRADLE="android/build.gradle"
+          APP_BUILD_GRADLE="android/app/build.gradle"
+          if [ -f "$BUILD_GRADLE" ]; then
+            grep -q "com.google.gms:google-services" "$BUILD_GRADLE" || \
+              sed -i "/dependencies {/a\\        classpath 'com.google.gms:google-services:4.4.2'" "$BUILD_GRADLE"
+          fi
+          if [ -f "$APP_BUILD_GRADLE" ]; then
+            grep -q "com.google.gms.google-services" "$APP_BUILD_GRADLE" || \
+              echo "apply plugin: 'com.google.gms.google-services'" >> "$APP_BUILD_GRADLE"
+          fi
+
+      - name: Wire in Google Services Gradle plugin (Kotlin DSL build files)
+        run: |
+          BUILD_GRADLE_KTS="android/build.gradle.kts"
+          APP_BUILD_GRADLE_KTS="android/app/build.gradle.kts"
+          if [ -f "$BUILD_GRADLE_KTS" ]; then
+            grep -q "com.google.gms:google-services" "$BUILD_GRADLE_KTS" || \
+              sed -i "/dependencies {/a\\        classpath(\"com.google.gms:google-services:4.4.2\")" "$BUILD_GRADLE_KTS"
+          fi
+          if [ -f "$APP_BUILD_GRADLE_KTS" ]; then
+            grep -q "com.google.gms.google-services" "$APP_BUILD_GRADLE_KTS" || \
+              echo 'apply(plugin = "com.google.gms.google-services")' >> "$APP_BUILD_GRADLE_KTS"
+          fi
+
+      - name: Get Flutter packages
+        run: flutter pub get
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pk-bakery-customer-app
+          path: build/app/outputs/flutter-apk/app-release.apk
