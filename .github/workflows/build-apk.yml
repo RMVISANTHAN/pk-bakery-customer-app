@@ -47,7 +47,20 @@ jobs:
             cp /tmp/google-services.json android/app/google-services.json
           fi
 
-      - name: Wire in Google Services Gradle plugin (Groovy build files)
+      - name: Wire in Google Services Gradle plugin (settings.gradle.kts + app/build.gradle.kts plugins DSL)
+        run: |
+          SETTINGS_KTS="android/settings.gradle.kts"
+          APP_BUILD_KTS="android/app/build.gradle.kts"
+          if [ -f "$SETTINGS_KTS" ]; then
+            grep -q "com.google.gms.google-services" "$SETTINGS_KTS" || \
+              sed -i '/id("org.jetbrains.kotlin.android")/a\    id("com.google.gms.google-services") version "4.4.2" apply false' "$SETTINGS_KTS"
+          fi
+          if [ -f "$APP_BUILD_KTS" ]; then
+            grep -q "com.google.gms.google-services" "$APP_BUILD_KTS" || \
+              sed -i '/id("dev.flutter.flutter-gradle-plugin")/a\    id("com.google.gms.google-services")' "$APP_BUILD_KTS"
+          fi
+
+      - name: Wire in Google Services Gradle plugin (legacy Groovy buildscript, older templates)
         run: |
           BUILD_GRADLE="android/build.gradle"
           APP_BUILD_GRADLE="android/app/build.gradle"
@@ -58,19 +71,6 @@ jobs:
           if [ -f "$APP_BUILD_GRADLE" ]; then
             grep -q "com.google.gms.google-services" "$APP_BUILD_GRADLE" || \
               echo "apply plugin: 'com.google.gms.google-services'" >> "$APP_BUILD_GRADLE"
-          fi
-
-      - name: Wire in Google Services Gradle plugin (Kotlin DSL build files)
-        run: |
-          BUILD_GRADLE_KTS="android/build.gradle.kts"
-          APP_BUILD_GRADLE_KTS="android/app/build.gradle.kts"
-          if [ -f "$BUILD_GRADLE_KTS" ]; then
-            grep -q "com.google.gms:google-services" "$BUILD_GRADLE_KTS" || \
-              sed -i "/dependencies {/a\\        classpath(\"com.google.gms:google-services:4.4.2\")" "$BUILD_GRADLE_KTS"
-          fi
-          if [ -f "$APP_BUILD_GRADLE_KTS" ]; then
-            grep -q "com.google.gms.google-services" "$APP_BUILD_GRADLE_KTS" || \
-              echo 'apply(plugin = "com.google.gms.google-services")' >> "$APP_BUILD_GRADLE_KTS"
           fi
 
       - name: Get Flutter packages
