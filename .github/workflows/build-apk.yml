@@ -36,7 +36,7 @@ jobs:
         run: |
           if [ ! -f android/settings.gradle ] && [ ! -f android/settings.gradle.kts ]; then
             echo "Android scaffolding missing — generating it now"
-            flutter create --platforms=android --org com.pkbakery --project-name pk_bakery_customer .
+            flutter create --platforms=android --org com.pkbakery --project-name customer .
           else
             echo "Android scaffolding already present, skipping"
           fi
